@@ -1,6 +1,6 @@
 {
   "name": "code-goblin",
-  "version": "0.0.0",
+  "version": "0.0.0-alpha",
   "description": "AI-driven source code generator",
   "main": "src/index.js",
   "scripts": {
