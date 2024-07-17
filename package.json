@@ -3,6 +3,9 @@
   "version": "0.0.0-alpha",
   "description": "AI-driven source code generator",
   "main": "src/index.js",
+  "bin": {
+    "codegoblin": "bin/codegoblin.js"
+  },
   "scripts": {
     "build": "npm run lint && npm run build:grammar",
     "build:grammar": "nearleyc src/grammars/answer.ne -o src/grammars/answer.js",
