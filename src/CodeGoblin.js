@@ -86,6 +86,9 @@ function prettifyProgrammingLanguageName(
  * The mode to use when transforming responses.
  */
 
+/**
+ * Code Goblin is an A.I. assistant for software engineering.
+ */
 module.exports = class CodeGoblin {
   /**
    * @type {Ollama}
@@ -133,7 +136,7 @@ module.exports = class CodeGoblin {
    * @param {string} prompt
    * The prompt to provide to the `CodeGoblin`.
    *
-   * @param {*} options
+   * @param {ICodeGoblinChatOptions} options
    * A collection of options used to process the chat request.
    *
    * @returns {string}
@@ -291,7 +294,7 @@ module.exports = class CodeGoblin {
    * @param {string} description
    * A description of the source code to generate.
    *
-   * @param {*} options
+   * @param {ICodeGoblinChatOptions} options
    * The options used to generate source code.
    *
    * @returns {string}
@@ -340,7 +343,7 @@ module.exports = class CodeGoblin {
    * @param {string} sourceCode
    * The source code to debug.
    *
-   * @param {*} options
+   * @param {ICodeGoblinChatOptions} options
    * The options to use when debugging the source code.
    *
    * @returns {string}
@@ -389,7 +392,7 @@ module.exports = class CodeGoblin {
    * @param {string} sourceCode
    * The source code to debug.
    *
-   * @param {*} options
+   * @param {ICodeGoblinChatOptions} options
    * The options to use when debugging the source code.
    *
    * @returns {string}
