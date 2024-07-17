@@ -2,31 +2,9 @@ const { Ollama } = require("ollama");
 
 const AnswerParser = require("./AnswerParser");
 
-// const ast = AnswerParser.parseSync("another ```javascript\nHello World``` So there is ```console.log()``` woudl y");
-
-// console.log(ast);
-
-// console.log("Code:");
-// console.log(ast.codeBlocks.map(block => block.value));
-// console.log();
-// console.log("Text:");
-// console.log(ast.textBlocks.map(block => block.value));
-
-// console.log(
-//   parse(
-//     "```javascript\n" +
-//     `console.log("Hello, world!");\n` +
-//     "```",
-//     "```javascript",
-//     "```"
-//   )
-// );
-
-// process.exit();
-
 const DEFAULT_PROGRAMMING_LANGUAGE = "javascript";
 
-const NO_ERRORS_DETECTED_MESSAGE = "No errors were detected in the provided source code.";
+const DEFAULT_MESSAGE = "Code Goblin is unable to process this request.";
 
 function prettifyProgrammingLanguageNameToken(
   name
@@ -141,200 +119,218 @@ module.exports = class CodeGoblin {
    *
    * @returns {string}
    */
-  async chat(
+  chat(
     prompt,
     options
   ) {
-    options ??= {};
+    return new Promise(
+      (resolve, reject) => {
+        options ??= {};
 
-    const callback = options.callback ??= null;
-    const mode = options.mode ??= "text";
+        const callback = options.callback ??= null;
+        const mode = options.mode ??= "text";
+        const timeout = options.timeout ??= Infinity;
 
-    const ollama = this.#ollama;
-    const model = this.#ollamaModel;
+        const ollama = this.#ollama;
+        const model = this.#ollamaModel;
 
-    const chatResponse = await ollama.chat(
-      {
-        model,
-        messages: [
+        if (timeout && isFinite(timeout) && timeout > 0) setTimeout(
+          () => resolve(DEFAULT_MESSAGE),
+          timeout
+        );
+
+        ollama.chat(
           {
-            role: "user",
-            content: prompt
+            model,
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            stream: true
           }
-        ],
-        stream: true
+        ).then(
+          chatResponse => this.#chat(chatResponse, callback, mode, resolve, reject)
+        );
       }
-    );
+    )
+  }
 
-    let currentLine = "";
-    let line = "";
-    let lineLowerCase = "";
-    let lineType = "text";
-    let message = "";
+  async #chat(
+    chatResponse,
+    callback,
+    mode,
+    resolve,
+    reject
+  ) {
+    try {
+      let currentLine = "";
+      let line = "";
+      let lineLowerCase = "";
+      let message = "";
 
-    let hasEncounteredSourceCode = false;
-    let hasFoundProgrammingLanguage = false;
-    let isAlreadyCorrect = false;
-    let isNewLine = false;
-    let isProgrammingLanguageNext = false;
-    let remainingSkips = 0;
-    let text = "";
-    let tokenCount = 0;
+      let hasEncounteredSourceCode = false;
+      let hasFoundProgrammingLanguage = false;
+      let isAlreadyCorrect = false;
+      let isNewLine = false;
+      let isProgrammingLanguageNext = false;
+      let remainingSkips = 0;
+      let text = "";
+      let tokenCount = 0;
 
-    const toggleLineType = () => lineType = lineType === "text" ? "code" : "text";
-
-    function isEndOfSentence(
-      token
-    ) {
-      const delimiters = [
-        ".",
-        "?",
-        "!"
-      ];
-
-      for (const delimiter of delimiters) if (token.includes(delimiter)) return true;
-
-      return false;
-    }
-
-    for await (const tokenResponse of chatResponse) {
-      tokenCount++;
-
-      if (remainingSkips --> 0) continue;
-
-      const token = tokenResponse.message.content;
-
-      isNewLine = token.includes("\n");
-
-      if (isNewLine && tokenCount === 1) {
-        tokenCount--;
-
-        continue;
-      }
-
-      if (token.includes("\n") || isEndOfSentence(token)) {
-        line = (currentLine + token).trimEnd();
-        lineLowerCase = line.toLowerCase();
-        currentLine = "";
-      } else currentLine += token;
-
-      if (currentLine.length > 0) lineLowerCase = currentLine.toLowerCase();
-
-      if (
-        token.includes("correct") && (
-          lineLowerCase.includes("actually correct") ||
-          lineLowerCase.includes("already correct")
-        )
+      function isEndOfSentence(
+        token
       ) {
-        isAlreadyCorrect = true;
+        const delimiters = [
+          ".",
+          "?",
+          "!"
+        ];
 
-        break;
+        for (const delimiter of delimiters) if (token.includes(delimiter)) return true;
+
+        return false;
       }
 
-      if (token.includes("\n")) {
-        if (line.includes("```")) toggleLineType();
-        if (lineType === "text") text += line;
-      }
+      for await (const tokenResponse of chatResponse) {
+        tokenCount++;
 
-      if (mode === "code") {
-        if (isProgrammingLanguageNext) {
-          if (token !== "\n") continue;
+        if (remainingSkips --> 0) continue;
 
-          isProgrammingLanguageNext = false;
+        const token = tokenResponse.message.content;
+
+        isNewLine = token.includes("\n");
+
+        if (isNewLine && tokenCount === 1) {
+          tokenCount--;
 
           continue;
         }
 
-        if (token.includes("\n")) {
-          if (hasEncounteredSourceCode && lineLowerCase.includes("// example")) {
-            message = message.substring(0, line.length - 1);
+        if (token.includes("\n") || isEndOfSentence(token)) {
+          line = (currentLine + token).trimEnd();
+          lineLowerCase = line.toLowerCase();
+          currentLine = "";
+        } else currentLine += token;
 
-            break;
+        if (currentLine.length > 0) lineLowerCase = currentLine.toLowerCase();
+
+        if (
+          lineLowerCase.includes("actually correct") ||
+          lineLowerCase.includes("already correct") ||
+          lineLowerCase.includes("cannot provide") ||
+          lineLowerCase.includes("can't provide") ||
+          lineLowerCase.includes("unable to provide")
+        ) {
+          isAlreadyCorrect = true;
+
+          break;
+        }
+
+        if (mode === "code") {
+          if (isProgrammingLanguageNext) {
+            if (token !== "\n") continue;
+
+            isProgrammingLanguageNext = false;
+
+            continue;
           }
+
+          if (token.includes("\n")) {
+            if (hasEncounteredSourceCode && lineLowerCase.includes("// example")) {
+              message = message.substring(0, line.length - 1);
+
+              break;
+            }
+          }
+
+          if (token === "```") {
+            if (hasFoundProgrammingLanguage) break;
+
+            hasEncounteredSourceCode = hasFoundProgrammingLanguage = isProgrammingLanguageNext = true;
+
+            continue;
+          } else if (!hasEncounteredSourceCode) continue;
         }
 
-        if (token === "```") {
-          if (hasFoundProgrammingLanguage) break;
+        if (callback) await callback(
+          {
+            chatResponse,
+            isNewLine,
+            line,
+            lineLowerCase,
+            token
+          }
+        );
 
-          hasEncounteredSourceCode = hasFoundProgrammingLanguage = isProgrammingLanguageNext = true;
-
-          continue;
-        } else if (!hasEncounteredSourceCode) continue;
+        message += token;
       }
 
-      if (callback) await callback(
-        {
-          chatResponse,
-          isNewLine,
-          line,
-          lineLowerCase,
-          token
-        }
-      );
+      chatResponse.abort();
 
-      message += token;
+      if (isAlreadyCorrect) resolve(DEFAULT_MESSAGE);
+
+      resolve(message);
+    } catch (error) {
+      reject(error.message);
     }
-
-    chatResponse.abort();
-
-    if (isAlreadyCorrect) return NO_ERRORS_DETECTED_MESSAGE;
-
-    if (!(text.includes("```"))) {
-      text = text.trim();
-
-      message = text;
-    }
-
-    return message.trim();
   }
 
   /**
-   * Generate source code.
+   * Analyze source code.
    *
-   * @param {string} description
-   * A description of the source code to generate.
+   * @param {string} sourceCode
+   * The source code to analyze.
    *
    * @param {ICodeGoblinChatOptions} options
-   * The options used to generate source code.
+   * The options to use when analyzing the source code.
    *
    * @returns {string}
    */
-  async code(
-    description,
+  async analyze(
+    sourceCode,
     options
   ) {
-    description ??= "";
-
     options ??= {};
-
-    const callback = options.callback ??= null;
 
     let programmingLanguage = options.programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
 
-    description = description.trim();
-    programmingLanguage = programmingLanguage.trim();
+    const callback = options.callback ??= null;
+    const timeout = options.timeout ??= null;
+
+    programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
+
+    if (typeof sourceCode === "function") {
+      sourceCode = sourceCode.toString();
+
+      programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE;
+    }
+
+    sourceCode = sourceCode.trim();
 
     const programmingLanguagePretty = prettifyProgrammingLanguageName(programmingLanguage);
 
     programmingLanguage = programmingLanguagePretty.toLowerCase();
 
-    const prompt
-      = "Please write "
+    let prompt
+      = "Please analyze and explain the following "
       + programmingLanguagePretty
-      + " source code.\n\n"
-      + "Here is a description of what the source code should achieve:\n\n"
-      + description;
+      + " source code:\n\n```"
+      + (programmingLanguage.includes(" ") ? programmingLanguage.split(" ")[0] : programmingLanguage)
+      + "\n"
+      + sourceCode
+      + "\n```";
 
-    const chatOptions = {
-      callback,
-      mode: "code"
-    };
+    if (typeof options.error !== "string") options.error = "";
 
-    const answer = await this.chat(prompt, chatOptions);
+    const errorText = options.error;
 
-    const correctedCode = AnswerParser.parseSync(answer).code;
+    if (errorText && errorText.length > 0) prompt += "\n\nRunning the above source code produces the following error:\n\n" + errorText;
 
-    return correctedCode;
+    const answer = await this.chat(prompt, { callback, timeout });
+
+    if (answer === DEFAULT_MESSAGE) return sourceCode;
   }
 
   /**
@@ -357,6 +353,7 @@ module.exports = class CodeGoblin {
     let programmingLanguage = options.programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
 
     const callback = options.callback ??= null;
+    const timeout = options.timeout ??= null;
 
     programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
 
@@ -372,7 +369,7 @@ module.exports = class CodeGoblin {
 
     programmingLanguage = programmingLanguagePretty.toLowerCase();
 
-    const prompt
+    let prompt
       = "Please debug the following "
       + programmingLanguagePretty
       + " source code:\n\n```"
@@ -381,9 +378,15 @@ module.exports = class CodeGoblin {
       + sourceCode
       + "\n```";
 
-    const answer = await this.chat(prompt, { callback });
+    if (typeof options.error !== "string") options.error = "";
 
-    if (answer === NO_ERRORS_DETECTED_MESSAGE) return sourceCode;
+    const errorText = options.error;
+
+    if (errorText && errorText.length > 0) prompt += "\n\nHere is the error:\n\n" + errorText;
+
+    const answer = await this.chat(prompt, { callback, timeout });
+
+    if (answer === DEFAULT_MESSAGE) return sourceCode;
   }
 
   /**
@@ -406,6 +409,7 @@ module.exports = class CodeGoblin {
     let programmingLanguage = options.programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
 
     const callback = options.callback ??= null;
+    const timeout = options.timeout ??= null;
 
     programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
 
@@ -421,7 +425,7 @@ module.exports = class CodeGoblin {
 
     programmingLanguage = programmingLanguagePretty.toLowerCase();
 
-    const prompt
+    let prompt
       = "Please correct the following "
       + programmingLanguagePretty
       + " source code:\n\n```"
@@ -430,11 +434,127 @@ module.exports = class CodeGoblin {
       + sourceCode
       + "\n```";
 
+    if (typeof options.error !== "string") options.error = "";
+
+    const errorText = options.error;
+
+    if (errorText && errorText.length > 0) prompt += "\n\nHere is the error:\n\n" + errorText;
+
+    console.log(prompt);
+
     const chatOptions = {
       callback,
-      mode: "code"
+      mode: "code",
+      timeout
     };
 
     return await this.chat(prompt, chatOptions);
+  }
+
+  /**
+   * Generate source code.
+   *
+   * @param {string} description
+   * A description of the source code to generate.
+   *
+   * @param {ICodeGoblinChatOptions} options
+   * The options used to generate source code.
+   *
+   * @returns {string}
+   */
+  async generate(
+    description,
+    options
+  ) {
+    description ??= "";
+
+    options ??= {};
+
+    const callback = options.callback ??= null;
+    const timeout = options.timeout ??= null;
+
+    let programmingLanguage = options.programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
+
+    description = description.trim();
+    programmingLanguage = programmingLanguage.trim();
+
+    const programmingLanguagePretty = prettifyProgrammingLanguageName(programmingLanguage);
+
+    programmingLanguage = programmingLanguagePretty.toLowerCase();
+
+    const prompt
+      = "Please write "
+      + programmingLanguagePretty
+      + " source code.\n\n"
+      + "Here is a description of what the source code should achieve:\n\n"
+      + description;
+
+    const chatOptions = {
+      callback,
+      mode: "code",
+      timeout
+    };
+
+    const answer = await this.chat(prompt, chatOptions);
+
+    const correctedCode = AnswerParser.parseSync(answer).code;
+
+    return correctedCode;
+  }
+
+  /**
+   * Summarize source code.
+   *
+   * @param {string} sourceCode
+   * The source code to analyze.
+   *
+   * @param {ICodeGoblinChatOptions} options
+   * The options to use when analyzing the source code.
+   *
+   * @returns {string}
+   */
+  async summarize(
+    sourceCode,
+    options
+  ) {
+    options ??= {};
+
+    let programmingLanguage = options.programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
+
+    const callback = options.callback ??= null;
+    const timeout = options.timeout ??= null;
+
+    programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
+
+    if (typeof sourceCode === "function") {
+      sourceCode = sourceCode.toString();
+
+      programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE;
+    }
+
+    sourceCode = sourceCode.trim();
+
+    const programmingLanguagePretty = prettifyProgrammingLanguageName(programmingLanguage);
+
+    programmingLanguage = programmingLanguagePretty.toLowerCase();
+
+    let prompt
+      = "Please summarize the meaning of the following "
+      + programmingLanguagePretty
+      + " source code:\n\n```"
+      + (programmingLanguage.includes(" ") ? programmingLanguage.split(" ")[0] : programmingLanguage)
+      + "\n"
+      + sourceCode
+      + "\n```";
+
+    if (typeof options.error !== "string") options.error = "";
+
+    const errorText = options.error;
+
+    if (errorText && errorText.length > 0) prompt += "\n\nRunning the above source code produces the following error:\n\n" + errorText;
+
+    const answer = await this.chat(prompt, { callback, timeout });
+
+    if (answer === DEFAULT_MESSAGE) return sourceCode;
   }
 };

@@ -1,6 +1,16 @@
 const { parseArgs } = require("util");
 
 const PARSE_ARGS_OPTIONS = {
+  analyze: {
+    default: false,
+    type: "boolean",
+    short: "a"
+  },
+  chat: {
+    default: false,
+    type: "boolean",
+    short: "C"
+  },
   code: {
     default: false,
     type: "boolean",
@@ -16,6 +26,10 @@ const PARSE_ARGS_OPTIONS = {
     type: "boolean",
     short: "f"
   },
+  input: {
+    type: "string",
+    short: "i"
+  },
   language: {
     default: "javascript",
     type: "string",
@@ -25,6 +39,10 @@ const PARSE_ARGS_OPTIONS = {
     default: "gemma2",
     type: "string",
     short: "m"
+  },
+  output: {
+    type: "string",
+    short: "o"
   },
   port: {
     type: "string",
@@ -40,6 +58,15 @@ const args = parseArgs(
     strict: false
   }
 );
+
+if (
+  !(args.values.analyze) ||
+  !(args.values.code) ||
+  !(args.values.debug) ||
+  !(args.values.fix)
+) {
+  args.values.chat = true;
+}
 
 Object.freeze(args);
 
