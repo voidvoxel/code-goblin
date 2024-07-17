@@ -90,7 +90,7 @@ async function fix(
   sourceCode,
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
-  const sourceCode = await codeGoblin.fix(
+  const fixedSourceCode = await codeGoblin.fix(
     sourceCode,
     {
       callback: e => {
@@ -100,7 +100,7 @@ async function fix(
     }
   );
 
-  return sourceCode;
+  return fixedSourceCode;
 }
 
 async function main() {
