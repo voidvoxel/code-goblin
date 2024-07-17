@@ -1,2 +1,3 @@
-# code-goblin
- AI-driven source code generator
+# Code Goblin
+
+Code Goblin is an AI-driven source code generator.
