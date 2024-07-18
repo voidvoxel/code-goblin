@@ -440,8 +440,6 @@ module.exports = class CodeGoblin {
 
     if (errorText && errorText.length > 0) prompt += "\n\nHere is the error:\n\n" + errorText;
 
-    console.log(prompt);
-
     const chatOptions = {
       callback,
       mode: "code",
@@ -554,6 +552,74 @@ module.exports = class CodeGoblin {
     if (errorText && errorText.length > 0) prompt += "\n\nRunning the above source code produces the following error:\n\n" + errorText;
 
     const answer = await this.chat(prompt, { callback, timeout });
+
+    if (answer === DEFAULT_MESSAGE) return sourceCode;
+  }
+
+  /**
+   * Translate source code from one programming language to another.
+   *
+   * @param {string} sourceCode
+   * The source code to analyze.
+   *
+   * @param {ICodeGoblinChatOptions} options
+   * The options to use when analyzing the source code.
+   *
+   * @returns {string}
+   */
+  async translate(
+    sourceCode,
+    options
+  ) {
+    options ??= {};
+
+    let programmingLanguage = options.programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
+    let inputProgrammingLanguage = options.inputProgrammingLanguage ??= null;
+
+    const callback = options.callback ??= null;
+    const timeout = options.timeout ??= null;
+
+    programmingLanguage ??= DEFAULT_PROGRAMMING_LANGUAGE;
+
+    if (typeof sourceCode === "function") {
+      sourceCode = sourceCode.toString();
+
+      programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE;
+    }
+
+    sourceCode = sourceCode.trim();
+
+    const programmingLanguagePretty = prettifyProgrammingLanguageName(programmingLanguage);
+
+    programmingLanguage = programmingLanguagePretty.toLowerCase();
+
+    let prompt
+      = "Please rewrite the following"
+      + (
+        inputProgrammingLanguage ? (
+          " " + prettifyProgrammingLanguageName(inputProgrammingLanguage)
+        ) : ""
+      )
+      + " source code into the "
+      + programmingLanguagePretty;
+
+    prompt += " programming language:\n\n```"
+      + (
+        !!inputProgrammingLanguage
+          ? (inputProgrammingLanguage.includes(" ") ? inputProgrammingLanguage.split(" ")[0] : inputProgrammingLanguage)
+          : ""
+    )
+      + "\n"
+      + sourceCode
+      + "\n```";
+
+    if (typeof options.error !== "string") options.error = "";
+
+    const errorText = options.error;
+
+    if (errorText && errorText.length > 0) prompt += "\n\nRunning the above source code produces the following error:\n\n" + errorText;
+
+    const answer = await this.chat(prompt, { callback, mode: "code", timeout });
 
     if (answer === DEFAULT_MESSAGE) return sourceCode;
   }

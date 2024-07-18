@@ -26,6 +26,11 @@ const PARSE_ARGS_OPTIONS = {
     type: "boolean",
     short: "f"
   },
+  translate: {
+    default: false,
+    type: "boolean",
+    short: "t"
+  },
   input: {
     type: "string",
     short: "i"

@@ -140,12 +140,50 @@ async function fix(
   return fixedSourceCode;
 }
 
+/**
+ * Fix any bugs discovered in the the provided source code.
+ *
+ * @param {CodeGoblin} codeGoblin
+ * @param {string} sourceCode
+ * @param {string} programmingLanguage
+ * @returns
+ */
+async function translate(
+  codeGoblin,
+  sourceCode,
+  programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE,
+  inputProgrammingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
+) {
+  const translatedSourceCode = await codeGoblin.translate(
+    sourceCode,
+    {
+      callback: e => {
+        outputStream.write(e.token); return;
+      },
+      programmingLanguage,
+      inputProgrammingLanguage
+    }
+  );
+
+  return translatedSourceCode;
+}
+
 async function main() {
   const codeGoblin = new CodeGoblin();
 
   const inputPath = args.values.input;
   const outputPath = args.values.output;
-  const programmingLanguage = args.values.language;
+
+  let programmingLanguage = args.values.language;
+  let inputProgrammingLanguage = null;
+
+  if (inputPath) inputProgrammingLanguage = path.extname(inputPath).substring(1);
+
+  if (
+    outputPath && (
+      !programmingLanguage || args.values.translate
+    )
+  ) programmingLanguage = path.extname(outputPath).substring(1);
 
   let prompt = args.positionals.join(" ");
 
@@ -159,11 +197,12 @@ async function main() {
 
   let answer = null;
 
-  // if (args.values.code) answer = await analyze(codeGoblin, prompt);
+  if (args.values.analyze) answer = await analyze(codeGoblin, prompt);
   if (args.values.code) answer = await code(codeGoblin, prompt, programmingLanguage);
   // if (args.values.code) answer = await comment(codeGoblin, prompt);
   else if (args.values.debug) answer = await debug(codeGoblin, prompt, programmingLanguage);
   else if (args.values.fix) answer = await fix(codeGoblin, prompt, programmingLanguage);
+  else if (args.values.translate) answer = await translate(codeGoblin, prompt, programmingLanguage, inputProgrammingLanguage);
   else answer = await chat(codeGoblin, prompt, programmingLanguage);
 
   if (outputStream.close) {
