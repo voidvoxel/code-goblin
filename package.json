@@ -30,13 +30,7 @@
   },
   "homepage": "https://github.com/voidvoxel/code-goblin#readme",
   "dependencies": {
-    "brain.js": "../brain.js",
-    "express": "^4.19.2",
-    "glob": "^11.0.0",
-    "nearley": "^2.20.1",
-    "ollama": "^0.5.2",
-    "puppeteer": "^22.13.0",
-    "robotjs": "^0.6.0"
+    "ollama": "^0.5.2"
   },
   "devDependencies": {
     "eslint": "^9.6.0",
