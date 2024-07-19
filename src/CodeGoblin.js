@@ -117,7 +117,7 @@ module.exports = class CodeGoblin {
    * @param {ICodeGoblinChatOptions} options
    * A collection of options used to process the chat request.
    *
-   * @returns {string}
+   * @returns {Promise<string>}
    */
   chat(
     prompt,
