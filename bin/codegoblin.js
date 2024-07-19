@@ -27,7 +27,7 @@ let outputStream = process.stdout;
  */
 async function chat(
   codeGoblin,
-  prompt,
+  prompt = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
   const sourceCode = await codeGoblin.chat(
@@ -45,6 +45,33 @@ async function chat(
 }
 
 /**
+ * Analyze the provided source code.
+ *
+ * @param {CodeGoblin} codeGoblin
+ * @param {string} sourceCode
+ * @param {string} programmingLanguage
+ * @returns
+ */
+async function analyze(
+  codeGoblin,
+  sourceCode = "",
+  programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
+) {
+  const analysis = await codeGoblin.analyze(
+    sourceCode,
+    {
+      callback: e => {
+        outputStream.write(e.token);
+        return;
+      },
+      programmingLanguage
+    }
+  );
+
+  return analysis;
+}
+
+/**
  * Generate source code from the given description.
  *
  * @param {CodeGoblin} codeGoblin
@@ -54,7 +81,7 @@ async function chat(
  */
 async function code(
   codeGoblin,
-  description,
+  description = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
   const sourceCode = await codeGoblin.generate(
@@ -81,7 +108,7 @@ async function code(
  */
 async function debug(
   codeGoblin,
-  sourceCode,
+  sourceCode = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
   const answer = await codeGoblin.debug(
@@ -124,7 +151,7 @@ async function debug(
  */
 async function fix(
   codeGoblin,
-  sourceCode,
+  sourceCode = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
   const fixedSourceCode = await codeGoblin.fix(
@@ -150,7 +177,7 @@ async function fix(
  */
 async function translate(
   codeGoblin,
-  sourceCode,
+  sourceCode = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE,
   inputProgrammingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
@@ -169,13 +196,27 @@ async function translate(
 }
 
 async function main() {
-  const codeGoblin = new CodeGoblin();
-
   const inputPath = args.values.input;
   const outputPath = args.values.output;
 
   let programmingLanguage = args.values.language;
   let inputProgrammingLanguage = null;
+
+  let ollamaHost = args.values["ollama-host"];
+  let ollamaProxy = args.values["ollama-proxy"];
+  let ollamaModel = args.values.model;
+
+  const ollamaOptions = {
+    host: ollamaHost,
+    model: ollamaModel,
+    proxy: ollamaProxy
+  };
+
+  const codeGoblinOptions = {
+    ollama: ollamaOptions
+  };
+
+  const codeGoblin = new CodeGoblin(codeGoblinOptions);
 
   if (inputPath) inputProgrammingLanguage = path.extname(inputPath).substring(1);
 
@@ -197,9 +238,9 @@ async function main() {
 
   let answer = null;
 
-  if (args.values.analyze) answer = await analyze(codeGoblin, prompt);
+  if (args.values.analyze) answer = await analyze(codeGoblin, prompt, programmingLanguage);
   if (args.values.code) answer = await code(codeGoblin, prompt, programmingLanguage);
-  // if (args.values.code) answer = await comment(codeGoblin, prompt);
+  // if (args.values.code) answer = await comment(codeGoblin, prompt, programmingLanguage);
   else if (args.values.debug) answer = await debug(codeGoblin, prompt, programmingLanguage);
   else if (args.values.fix) answer = await fix(codeGoblin, prompt, programmingLanguage);
   else if (args.values.translate) answer = await translate(codeGoblin, prompt, programmingLanguage, inputProgrammingLanguage);

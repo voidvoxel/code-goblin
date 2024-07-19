@@ -74,7 +74,7 @@ module.exports = class CodeGoblin {
   #ollama;
 
   /**
-   * @type {"codellama" | "gemma2" | "mistral"}
+   * @type {string}
    */
   #ollamaModel;
 
@@ -85,7 +85,7 @@ module.exports = class CodeGoblin {
 
     const ollamaOptions = options.ollama ??= {};
 
-    this.#ollamaModel = ollamaOptions.model ??= "gemma2";
+    this.#ollamaModel = ollamaOptions.model ??= "mistral";
 
     ollamaOptions.host ??= "127.0.0.1:11434";
     ollamaOptions.proxy ??= null;
@@ -595,15 +595,15 @@ module.exports = class CodeGoblin {
 
     let prompt
       = "Please rewrite the following"
-      + (
-        inputProgrammingLanguage ? (
-          " " + prettifyProgrammingLanguageName(inputProgrammingLanguage)
-        ) : ""
-      )
-      + " source code into the "
+      // + (
+      //   inputProgrammingLanguage ? (
+      //     " " + prettifyProgrammingLanguageName(inputProgrammingLanguage)
+      //   ) : ""
+      // )
+      + " code snippet in the "
       + programmingLanguagePretty;
 
-    prompt += " programming language:\n\n```"
+    prompt += " programming language. The response should only contain a single code snippet of " + programmingLanguagePretty + " and nothing else.\n\n```"
       + (
         !!inputProgrammingLanguage
           ? (inputProgrammingLanguage.includes(" ") ? inputProgrammingLanguage.split(" ")[0] : inputProgrammingLanguage)
