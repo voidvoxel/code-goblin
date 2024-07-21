@@ -3,7 +3,7 @@
 const { readFile } = require("fs").promises;
 const path = require("path");
 
-const { CodeGoblin } = require("../src");
+const { Goblln } = require("../src");
 
 const args = require("../src/args");
 const { open, writeFile } = require("fs/promises");
@@ -18,19 +18,19 @@ const EXAMPLE_PROMPTS = [
 let outputStream = process.stdout;
 
 /**
- * Chat with Code Goblin.
+ * Chat with Goblln.
  *
- * @param {CodeGoblin} codeGoblin
+ * @param {Goblln} goblln
  * @param {string} prompt
  * @param {string} programmingLanguage
  * @returns
  */
 async function chat(
-  codeGoblin,
+  goblln,
   prompt = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
-  const sourceCode = await codeGoblin.chat(
+  const sourceCode = await goblln.chat(
     prompt,
     {
       callback: e => {
@@ -47,17 +47,17 @@ async function chat(
 /**
  * Analyze the provided source code.
  *
- * @param {CodeGoblin} codeGoblin
+ * @param {Goblln} goblln
  * @param {string} sourceCode
  * @param {string} programmingLanguage
  * @returns
  */
 async function analyze(
-  codeGoblin,
+  goblln,
   sourceCode = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
-  const analysis = await codeGoblin.analyze(
+  const analysis = await goblln.analyze(
     sourceCode,
     {
       callback: e => {
@@ -74,17 +74,17 @@ async function analyze(
 /**
  * Generate source code from the given description.
  *
- * @param {CodeGoblin} codeGoblin
+ * @param {Goblln} goblln
  * @param {string} description
  * @param {string} programmingLanguage
  * @returns
  */
 async function code(
-  codeGoblin,
+  goblln,
   description = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
-  const sourceCode = await codeGoblin.generate(
+  const sourceCode = await goblln.generate(
     description,
     {
       callback: e => {
@@ -101,17 +101,17 @@ async function code(
 /**
  * Fix any bugs discovered in the the provided source code.
  *
- * @param {CodeGoblin} codeGoblin
+ * @param {Goblln} goblln
  * @param {string} sourceCode
  * @param {string} programmingLanguage
  * @returns
  */
 async function debug(
-  codeGoblin,
+  goblln,
   sourceCode = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
-  const answer = await codeGoblin.debug(
+  const answer = await goblln.debug(
     sourceCode,
     {
       callback: e => {
@@ -144,17 +144,17 @@ async function debug(
 /**
  * Fix any bugs discovered in the the provided source code.
  *
- * @param {CodeGoblin} codeGoblin
+ * @param {Goblln} goblln
  * @param {string} sourceCode
  * @param {string} programmingLanguage
  * @returns
  */
 async function fix(
-  codeGoblin,
+  goblln,
   sourceCode = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
-  const fixedSourceCode = await codeGoblin.fix(
+  const fixedSourceCode = await goblln.fix(
     sourceCode,
     {
       callback: e => {
@@ -170,18 +170,18 @@ async function fix(
 /**
  * Fix any bugs discovered in the the provided source code.
  *
- * @param {CodeGoblin} codeGoblin
+ * @param {Goblln} goblln
  * @param {string} sourceCode
  * @param {string} programmingLanguage
  * @returns
  */
 async function translate(
-  codeGoblin,
+  goblln,
   sourceCode = "",
   programmingLanguage = DEFAULT_PROGRAMMING_LANGUAGE,
   inputProgrammingLanguage = DEFAULT_PROGRAMMING_LANGUAGE
 ) {
-  const translatedSourceCode = await codeGoblin.translate(
+  const translatedSourceCode = await goblln.translate(
     sourceCode,
     {
       callback: e => {
@@ -212,11 +212,11 @@ async function main() {
     proxy: ollamaProxy
   };
 
-  const codeGoblinOptions = {
+  const gobllnOptions = {
     ollama: ollamaOptions
   };
 
-  const codeGoblin = new CodeGoblin(codeGoblinOptions);
+  const goblln = new Goblln(gobllnOptions);
 
   if (inputPath) inputProgrammingLanguage = path.extname(inputPath).substring(1);
 
@@ -238,13 +238,13 @@ async function main() {
 
   let answer = null;
 
-  if (args.values.analyze) answer = await analyze(codeGoblin, prompt, programmingLanguage);
-  if (args.values.code) answer = await code(codeGoblin, prompt, programmingLanguage);
-  // if (args.values.code) answer = await comment(codeGoblin, prompt, programmingLanguage);
-  else if (args.values.debug) answer = await debug(codeGoblin, prompt, programmingLanguage);
-  else if (args.values.fix) answer = await fix(codeGoblin, prompt, programmingLanguage);
-  else if (args.values.translate) answer = await translate(codeGoblin, prompt, programmingLanguage, inputProgrammingLanguage);
-  else answer = await chat(codeGoblin, prompt, programmingLanguage);
+  if (args.values.analyze) answer = await analyze(goblln, prompt, programmingLanguage);
+  if (args.values.code) answer = await code(goblln, prompt, programmingLanguage);
+  // if (args.values.code) answer = await comment(goblln, prompt, programmingLanguage);
+  else if (args.values.debug) answer = await debug(goblln, prompt, programmingLanguage);
+  else if (args.values.fix) answer = await fix(goblln, prompt, programmingLanguage);
+  else if (args.values.translate) answer = await translate(goblln, prompt, programmingLanguage, inputProgrammingLanguage);
+  else answer = await chat(goblln, prompt, programmingLanguage);
 
   if (outputStream.close) {
     await outputStream.close();
