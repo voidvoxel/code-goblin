@@ -303,6 +303,75 @@ module.exports = class Goblln {
   }
 
   /**
+   * Predict the next content.
+   *
+   * @param {string} content
+   * The content to predict from.
+   *
+   * @param {IGobllnChatOptions} options
+   * The options to use when responding to the content.
+   *
+   * @returns {string}
+   */
+  async predict(
+    content,
+    options
+  ) {
+    options ??= {};
+
+    const callback = options.callback ??= null;
+    const context = options.context ??= null;
+    const timeout = options.timeout ??= null;
+
+    const model = this.#ollamaModel;
+
+    content = content.trim();
+
+    if (typeof options.error !== "string") options.error = "";
+
+    const errorText = options.error;
+
+    if (errorText && errorText.length > 0) content += "\n\nHere is the error:\n\n" + errorText;
+
+    const chatOptions = {
+      callback,
+      timeout
+    };
+
+    const responses = await this.#ollama.generate(
+      {
+        context,
+        model,
+        prompt: content,
+        stream: true
+      }
+    );
+
+    let message = "";
+
+    for await (const response of responses) {
+      const context = response.context;
+      const token = response.response;
+      const isNewLine = token.includes("\n");
+
+      const callbackPromise = chatOptions.callback(
+        {
+          context,
+          isNewLine,
+          response,
+          token
+        }
+      );
+
+      message += token;
+
+      await callbackPromise;
+    }
+
+    return message;
+  }
+
+  /**
    * Summarize content.
    *
    * @param {string} content

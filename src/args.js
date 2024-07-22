@@ -52,6 +52,10 @@ const PARSE_ARGS_OPTIONS = {
   port: {
     type: "string",
     short: "p"
+  },
+  predict: {
+    type: "string",
+    short: "P"
   }
 };
 
@@ -68,7 +72,8 @@ if (
   !(args.values.analyze) ||
   !(args.values.code) ||
   !(args.values.debug) ||
-  !(args.values.fix)
+  !(args.values.fix) ||
+  !(args.values.predict)
 ) {
   args.values.chat = true;
 }

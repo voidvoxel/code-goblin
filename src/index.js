@@ -1,5 +1,5 @@
-const CodeGoblin = require("./CodeGoblin");
+const Goblln = require("./Goblln");
 
 module.exports = {
-  CodeGoblin
+  Goblln
 };

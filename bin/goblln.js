@@ -10,11 +10,6 @@ const { open, writeFile } = require("fs/promises");
 
 const DEFAULT_PROGRAMMING_LANGUAGE = "javascript";
 
-const EXAMPLE_PROMPTS = [
-  "a function that takes 2 numbers and adds them together",
-  "a function that takes 2 positions in 3D space and calculates the distance between them"
-];
-
 let outputStream = process.stdout;
 
 /**
@@ -168,6 +163,29 @@ async function fix(
 }
 
 /**
+ * Predict the next content.
+ *
+ * @param {Goblln} goblln
+ * @param {string} content
+ * @returns
+ */
+async function predict(
+  goblln,
+  content = ""
+) {
+  const output = await goblln.predict(
+    content,
+    {
+      callback: e => {
+        outputStream.write(e.token); return;
+      }
+    }
+  );
+
+  return output;
+}
+
+/**
  * Fix any bugs discovered in the the provided source code.
  *
  * @param {Goblln} goblln
@@ -243,6 +261,7 @@ async function main() {
   // if (args.values.code) answer = await comment(goblln, prompt, programmingLanguage);
   else if (args.values.debug) answer = await debug(goblln, prompt, programmingLanguage);
   else if (args.values.fix) answer = await fix(goblln, prompt, programmingLanguage);
+  else if (args.values.predict) answer = await  predict(goblln, prompt);
   else if (args.values.translate) answer = await translate(goblln, prompt, programmingLanguage, inputProgrammingLanguage);
   else answer = await chat(goblln, prompt, programmingLanguage);
 
