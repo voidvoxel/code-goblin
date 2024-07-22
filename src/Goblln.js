@@ -320,8 +320,9 @@ module.exports = class Goblln {
     options ??= {};
 
     const callback = options.callback ??= null;
-    const context = options.context ??= null;
     const timeout = options.timeout ??= null;
+
+    let context = options.context ??= null;
 
     const model = this.#ollamaModel;
 
@@ -347,11 +348,13 @@ module.exports = class Goblln {
       }
     );
 
-    let message = "";
+    let output = "";
 
     for await (const response of responses) {
-      const context = response.context;
+      context = response.context;
+
       const token = response.response;
+
       const isNewLine = token.includes("\n");
 
       const callbackPromise = chatOptions.callback(
@@ -363,12 +366,15 @@ module.exports = class Goblln {
         }
       );
 
-      message += token;
+      output += token;
 
       await callbackPromise;
     }
 
-    return message;
+    return {
+      context,
+      output
+    };
   }
 
   /**
