@@ -132,7 +132,7 @@ module.exports = class Goblln {
           chatResponse => this.#chat(chatResponse, callback, resolve, reject)
         );
       }
-    )
+    );
   }
 
   async #chat(
@@ -142,11 +142,11 @@ module.exports = class Goblln {
     reject
   ) {
     try {
-      let line = "";
-      let lineLowerCase = "";
+      const line = "";
+      const lineLowerCase = "";
       let message = "";
 
-      let isAlreadyCorrect = false;
+      const isAlreadyCorrect = false;
       let isNewLine = false;
       let remainingSkips = 0;
       let tokenCount = 0;
@@ -211,7 +211,7 @@ module.exports = class Goblln {
 
     input = input.trim();
 
-    let prompt
+    const prompt
       = "Please analyze the following:\n\n```"
       + "\n"
       + input
@@ -399,7 +399,7 @@ module.exports = class Goblln {
 
     content = content.trim();
 
-    let prompt
+    const prompt
       = "Please summarize the following:\n\n```md\n"
       + content
       + "\n```";
@@ -429,7 +429,7 @@ module.exports = class Goblln {
     options ??= {};
 
     let language = options.language ??= DEFAULT_LANGUAGE;
-    let inputLanguage = options.inputLanguage ??= null;
+    const inputLanguage = options.inputLanguage ??= null;
 
     const callback = options.callback ??= null;
     const timeout = options.timeout ??= null;

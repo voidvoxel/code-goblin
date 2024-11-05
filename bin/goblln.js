@@ -220,9 +220,9 @@ async function main() {
   let programmingLanguage = args.values.language;
   let inputProgrammingLanguage = null;
 
-  let ollamaHost = args.values["ollama-host"];
-  let ollamaProxy = args.values["ollama-proxy"];
-  let ollamaModel = args.values.model;
+  const ollamaHost = args.values["ollama-host"];
+  const ollamaProxy = args.values["ollama-proxy"];
+  const ollamaModel = args.values.model;
 
   const ollamaOptions = {
     host: ollamaHost,
@@ -258,7 +258,7 @@ async function main() {
 
   if (args.values.analyze) answer = await analyze(goblln, prompt, programmingLanguage);
   if (args.values.code) answer = await code(goblln, prompt, programmingLanguage);
-  // if (args.values.code) answer = await comment(goblln, prompt, programmingLanguage);
+  // if (args.values.comment) answer = await comment(goblln, prompt, programmingLanguage);
   else if (args.values.debug) answer = await debug(goblln, prompt, programmingLanguage);
   else if (args.values.fix) answer = await fix(goblln, prompt, programmingLanguage);
   else if (args.values.predict) answer = await  predict(goblln, prompt);
